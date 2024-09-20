@@ -1,0 +1,229 @@
+---
+title: "Wine Quality Prediction Project"
+author: "Jingqian Zhang"
+date: "2024-06-03"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+In this project, I aim to determine the optimal ingredient combination for producing high-quality wine. I will:
+
+1. Develop univariate and multiple linear regressions using R to identify significant variables and establish the final regression model.
+2. Interpret the regression analysis results.
+3. Evaluate the assumptions of linear regression.
+4. Identify next steps if assumptions are not met.
+5. Determine the necessity of non-linear regression if required.
+
+
+## Load the packages
+
+```{r, message=FALSE,warning=FALSE}
+
+# Load necessary packages
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(psych)
+library(nortest)
+library(lmtest) 
+
+```
+
+## Load Data
+
+```{r, message=FALSE,warning=FALSE}
+
+# Set working directory and load data
+setwd("~/R Project/r_work/SLU Statistics B/WineQualityProject")
+df <- read_delim("winequality-red.csv", delim = ";")
+
+# Print the first few rows of the dataset to check if it's correctly loaded
+print(head(df))
+print(summary(df))
+
+```
+The data has been successfully loaded and includes variables such as fixed acidity, volatile acidity, citric acid, residual sugar, chlorides, free sulfur dioxide, total sulfur dioxide, density, pH, sulphates, alcohol, and quality. Summary statistics provide an overview of each variable.
+
+
+Y= quality
+x1= fixed acidity\\
+x2= volatile acidity\\
+x3= citric acid\\
+x4= residual sugar\\
+x5= chlorides\\
+x6= free sulfur dioxide\\
+x7= total sulfur dioxide\\
+x8= density\\
+x9= pH\\
+x10= sulphates\\
+x11= alcohol\\
+
+## Data Preparation
+
+```{r}
+
+# Convert columns to numeric where possible
+df[] <- lapply(df, function(x) {
+  if (is.character(x)) as.numeric(as.character(x)) else x
+})
+
+# Remove columns that could not be converted to numeric
+df <- df %>% select_if(is.numeric)
+
+# Print column types to verify
+print(sapply(df, class))
+
+# Plot pairs
+pairs(df)
+
+```
+All columns have been converted to numeric types where applicable, and non-numeric columns have been removed. The pairs plot shows relationships between all pairs of variables, which helps in visualizing correlations.
+
+## Plots and Descriptions
+
+```{r}
+
+# Histogram of Wine Quality
+ggplot(df, aes(x = quality)) +
+  geom_histogram(binwidth = 1, fill = "blue", color = "black") +
+  labs(title = "Histogram of Wine Quality", x = "Quality", y = "Count")
+
+# Description of the histogram
+"The histogram of wine quality shows the distribution of quality ratings in the dataset. Most wines have a quality rating between 5 and 7."
+
+# Scatter plot of Alcohol vs. Quality
+ggplot(df, aes(x = alcohol, y = quality)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "red") +
+  labs(title = "Scatter Plot of Alcohol vs. Quality", x = "Alcohol", y = "Quality")
+
+# Description of the scatter plot
+"The scatter plot of alcohol vs. quality indicates a potential positive relationship between alcohol content and wine quality, as shown by the fitted linear regression line."
+
+```
+Histogram: The histogram shows that most wines have a quality rating between 5 and 7.
+Scatter Plot: The scatter plot indicates a positive relationship between alcohol content and wine quality, supported by the linear regression line.
+
+## Univariate Linear Regression
+
+```{r}
+
+# Univariate Linear Regression: Example with alcohol
+univariate_model <- lm(quality ~ alcohol, data = df)
+summary(univariate_model)
+
+# Perform univariate linear regression for all other variables
+# Get all variable names except the target variable 'quality'
+predictor_vars <- colnames(df)[colnames(df) != "quality"]
+
+# Loop through each predictor variable to perform univariate regression
+for (var in predictor_vars) {
+  # Dynamically generate the regression formula: quality ~ var
+  formula <- as.formula(paste("quality ~", var))
+  
+  # Perform the univariate linear regression
+  univariate_model <- lm(formula, data = df)
+  
+  # Print the summary of the regression results for each variable
+  cat("\nUnivariate regression for:", var, "\n")
+  print(summary(univariate_model))
+}
+
+```
+The univariate regression indicates that alcohol content is significantly associated with wine quality, with a coefficient of 0.36084 and a p-value < 2e-16. This means that as alcohol content increases, the quality of the wine also increases.
+
+
+## Multiple Linear Regression
+
+
+```{r}
+
+# Multiple Linear Regression
+multivariate_model <- lm(quality ~ ., data = df)
+summary(multivariate_model)
+
+```
+
+The multiple regression analysis shows that several variables are significantly associated with wine quality, including volatile acidity, chlorides, free sulfur dioxide, total sulfur dioxide, pH, sulphates, and alcohol. This model has an adjusted R-squared of 0.3561, indicating that approximately 35.61% of the variance in wine quality is explained by these variables.
+
+## Evaluate Linear Regression Assumptions
+
+```{r cars}
+
+# 1. Linearity
+plot(multivariate_model, which = 1)
+
+# 2. Normality of residuals
+plot(multivariate_model, which = 2)
+
+# 3. Homoscedasticity
+plot(multivariate_model, which = 3)
+
+# 4. Independence
+plot(multivariate_model, which = 4)
+
+# Additional tests
+shapiro.test(residuals(multivariate_model))
+bptest(multivariate_model)
+dwtest(multivariate_model)
+
+```
+
+Linearity: Residuals vs. Fitted plot shows no obvious pattern, suggesting linearity.
+Normality: Shapiro-Wilk test (p-value = 1.954e-08) and Q-Q plot suggest residuals are not perfectly normally distributed.
+Homoscedasticity: Breusch-Pagan test (p-value = 1.588e-13) indicates heteroscedasticity.
+Independence: Durbin-Watson test (p-value = 4.356e-07) indicates autocorrelation of residuals.
+
+## Non-linear Regression
+
+```{r}
+
+# Non-linear regression example
+nonlinear_model <- lm(quality ~ poly(alcohol, 2), data = df)
+summary(nonlinear_model)
+anova(univariate_model, nonlinear_model)
+
+```
+The non-linear regression (polynomial regression) did not significantly improve the model fit compared to the linear model (ANOVA p-value = 0.1124). Therefore, non-linear regression is not necessary.
+
+## Summary and Answers
+
+1. Develop univariate and multiple linear regressions:
+
+Univariate Linear Regression: The alcohol content is significantly associated with wine quality, with a p-value < 2e-16.
+
+Multiple Linear Regression: Significant variables include volatile acidity, chlorides, free sulfur dioxide, total sulfur dioxide, pH, sulphates, and alcohol.
+
+2. Interpret the results obtained from the regression analysis:
+
+Univariate Model: The coefficient for alcohol is 0.36084, indicating that each unit increase in alcohol content increases the wine quality by approximately 0.36084 units.
+
+Multiple Model: The coefficients indicate the direction and magnitude of each variable's impact on wine quality. For example, volatile acidity has a negative impact (coefficient = -1.084), while alcohol has a positive impact (coefficient = 0.276).
+
+3. Evaluate whether the assumptions of linear regression hold true:
+
+Linearity: Residuals vs. Fitted plot shows no obvious pattern, suggesting linearity.
+
+Normality: Shapiro-Wilk test (p-value = 1.954e-08) and Q-Q plot suggest residuals are not perfectly normally distributed.
+
+Homoscedasticity: Breusch-Pagan test (p-value = 1.588e-13) indicates heteroscedasticity.
+
+Independence: Durbin-Watson test (p-value = 4.356e-07) indicates autocorrelation of residuals.
+
+4. Identify next steps if assumptions are not met:
+
+Transformations: Consider log or square root transformations of variables.
+
+Alternative Models: Use generalized linear models (GLM) to address heteroscedasticity and autocorrelation.
+
+Time Series Analysis: If applicable, consider time series models for temporal data.
+
+5. Determine whether non-linear regression is necessary:
+
+The non-linear regression model (polynomial regression) did not significantly improve the fit compared to the linear model (ANOVA p-value = 0.1124), suggesting that non-linear regression may not be necessary.
+
