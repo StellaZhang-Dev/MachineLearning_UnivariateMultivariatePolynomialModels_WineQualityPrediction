@@ -1,6 +1,6 @@
 ---
 title: "Wine Quality Prediction Project"
-author: "Jingqian Zhang"
+author: "Stella Zhang"
 date: "2024-06-03"
 output: word_document
 ---
@@ -42,9 +42,13 @@ library(lmtest)
 setwd("~/R Project/r_work/SLU Statistics B/WineQualityProject")
 df <- read_delim("winequality-red.csv", delim = ";")
 
+# Ensure all column names are valid R names
+colnames(df) <- make.names(colnames(df))
+
 # Print the first few rows of the dataset to check if it's correctly loaded
 print(head(df))
 print(summary(df))
+
 
 ```
 The data has been successfully loaded and includes variables such as fixed acidity, volatile acidity, citric acid, residual sugar, chlorides, free sulfur dioxide, total sulfur dioxide, density, pH, sulphates, alcohol, and quality. Summary statistics provide an overview of each variable.
@@ -123,16 +127,20 @@ predictor_vars <- colnames(df)[colnames(df) != "quality"]
 
 # Loop through each predictor variable to perform univariate regression
 for (var in predictor_vars) {
+  # Clean variable name to ensure it's valid
+  var_clean <- make.names(var)
+  
   # Dynamically generate the regression formula: quality ~ var
-  formula <- as.formula(paste("quality ~", var))
+  formula <- as.formula(paste("quality ~", var_clean))
   
   # Perform the univariate linear regression
   univariate_model <- lm(formula, data = df)
   
   # Print the summary of the regression results for each variable
-  cat("\nUnivariate regression for:", var, "\n")
+  cat("\nUnivariate regression for:", var_clean, "\n")
   print(summary(univariate_model))
 }
+
 
 ```
 The univariate regression indicates that alcohol content is significantly associated with wine quality, with a coefficient of 0.36084 and a p-value < 2e-16. This means that as alcohol content increases, the quality of the wine also increases.
